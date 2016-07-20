@@ -157,7 +157,8 @@ elif LS_idx == 2:
 		time_temp = time[~time1.mask]	
 		power, z = lomb_scargle(time_temp, PDCSAP_FLUX_temp, PDCSAP_FLUX_err_temp, f, significance = [1.-0.682689492,1.-0.999999426697])
 		print z
-		time_2 = np.ma.mod(time_temp - time_temp.min() - 1.046,planet_period)
+		offset = ((first_transit%planet_period) - planet_period/2.)
+		time_2 = np.ma.mod(time - offset,planet_period)
 		data = np.ma.column_stack((time_2,PDCSAP_FLUX_temp))                           
 		data = data[np.lexsort((data[:,1],data[:,0]))]	
 		#bins = np.linspace(0.,planet_period,1000)

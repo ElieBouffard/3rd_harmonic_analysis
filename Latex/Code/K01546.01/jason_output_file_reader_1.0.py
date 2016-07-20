@@ -6,10 +6,6 @@ import sys
 import scipy.signal as diag
 from astropy.stats import sigma_clip
 from astropy.stats import LombScargle
-from scipy.optimize import curve_fit
-
-def sin_func(t, freq, phase, A, b):
-	return A*np.sin(2.*np.pi*freq + phase) + b
 
 ####We start by opening the files and extracting the data#####
 parameters = np.loadtxt("../../Jason_code_outputs/K01546.01/n0.dat", usecols = ([1]))
@@ -21,14 +17,13 @@ time, flux, flux_err = np.loadtxt("../../Jason_code_outputs/K01546.01/newfile.da
 print transit_center, period
 frequency, power = LombScargle(time, flux, flux_err).autopower(minimum_frequency=10.**(-0.05)*orbital_frequency, maximum_frequency=10.**(0.8)*orbital_frequency)
 
-
-
-m1_left = (np.abs(frequency - 0.99*orbital_frequency)).argmin()
-m1_right = (np.abs(frequency - 1.01*orbital_frequency)).argmin()
-m2_left = (np.abs(frequency - 1.99*orbital_frequency)).argmin()
-m2_right = (np.abs(frequency - 2.01*orbital_frequency)).argmin()
-m3_left = (np.abs(frequency - 2.99*orbital_frequency)).argmin()
-m3_right = (np.abs(frequency - 3.01*orbital_frequency)).argmin()
+print len(frequency)
+m1_left = (np.abs(frequency - 0.98*orbital_frequency)).argmin()
+m1_right = (np.abs(frequency - 1.02*orbital_frequency)).argmin()
+m2_left = (np.abs(frequency - 1.98*orbital_frequency)).argmin()
+m2_right = (np.abs(frequency - 2.02*orbital_frequency)).argmin()
+m3_left = (np.abs(frequency - 2.98*orbital_frequency)).argmin()
+m3_right = (np.abs(frequency - 3.02*orbital_frequency)).argmin()
 
 print m1_left, m1_right, m2_left, m2_right, m3_left, m3_right
 
@@ -40,14 +35,8 @@ m1 = LombScargle(time, flux, flux_err).power(m1_freq)
 m2 = LombScargle(time, flux, flux_err).power(m2_freq)
 m3 = LombScargle(time, flux, flux_err).power(m3_freq)
 
-t_fit = np.linspace(0, period, 100000)
-y_fit = LombScargle(time, flux, flux_err).model(t_fit, m1_freq)
-popt, pcov = curve_fit(sin_func, t_fit, y_fit, p0 = (m1_freq, -np.pi/2, 0.088, 0.0001))
-perr = np.sqrt(np.diag(pcov))
-print 'freq = ', popt[0]/orbital_frequency,'plus or minus',perr[0], 'phase = ', popt[1],'plus or minus',perr[1], 'amplitude = ', popt[2],'plus or minus',perr[2]
-
 print m1,m2,m3
-print 'fit amplitude is ', popt[2]/m1, 'times greater than the power'
+
 time2 = np.ma.mod(time, period)
 
 data = np.ma.column_stack((time2,flux,flux_err))                     
@@ -67,8 +56,6 @@ ax1.grid()
 ax1.get_yaxis().get_major_formatter().set_useOffset(False)
 ax1.plot(data[:,0], data[:,1], 'o', ms=1)
 ax1.plot(bins, bin_means, 'o', ms=5, color= 'red')
-ax1.plot(t_fit,y_fit, linewidth=3.0, color = 'green')
-ax1.plot(t_fit, sin_func(t_fit, *popt), color = 'yellow')
 
 ax2 = fig.add_subplot(2, 1, 2)
 ax2.set_xlabel('Frequency (1/orbital period)')

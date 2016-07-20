@@ -7,6 +7,7 @@ import scipy.signal as diag
 from astropy.io import fits
 from astroML.time_series import lomb_scargle
 from astropy.stats import sigma_clip
+from astropy.stats import LombScargle
 
 #This code computes the Lomb-Scargle periodogram of an exoplanet. First,
 #load the fits files, then write the planet period, the time of its first
@@ -147,7 +148,9 @@ elif LS_idx == 2:
 #plt.show()
 
 #Phase folding for illustrative purposes
-time = np.ma.mod(time - time.min() - 1.046,planet_period)
+offset = ((first_transit%planet_period) - planet_period/2.)
+
+time = np.ma.mod(time - offset,planet_period)
 data = np.ma.column_stack((time,PDCSAP_FLUX))                                #2D array of t,signal
 data = data[np.lexsort((data[:,1],data[:,0]))]	                          #we sort it
 
@@ -177,7 +180,7 @@ if LS_idx == 0:
 	#ax2.plot(f/orbital_frequency/2./np.pi, pgram * 2. / (normval*PDCSAP_FLUX.std()**2.))
 	ax2.set_xticks([1,2,3,4,5,6])
 	ax2.set_xticklabels([1,2,3,4,5,6])
-	ax2.plot([fmin/orbital_frequency.,fmax/orbital_frequency], [z[0],z[0]])
+	ax2.plot([fmin/orbital_frequency,fmax/orbital_frequency], [z[0],z[0]])
 	ax2.plot([fmin/orbital_frequency,fmax/orbital_frequency], [z[1],z[1]])
 	ax2.set_yticks([z[0],z[1]])
 	ax2.set_yticklabels([r'$1\sigma$',r'$5\sigma$'])
