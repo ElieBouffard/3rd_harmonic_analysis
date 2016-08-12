@@ -1,13 +1,41 @@
 import numpy as np
 import numpy.ma as ma
+from math import exp, log
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 import random
 import sys
+import time as timer
 import scipy.signal as diag
+from scipy.stats import genextreme as gev
 from astropy.stats import sigma_clip
 from astropy.stats import LombScargle
 
+def bootstrap(time, signal, fmin, fmax, n, noise_sdev, R, K, L):	
+	R_max = []
+	N = len(time)
+	freq = np.linspace(fmin,fmax,n)
+	for i in xrange(R):
+		print 'iteration ', i+1, 'out of ', R
+		L_list = []
+		signal_temp = signal[np.random.randint(N, size=N)]
+		list_temp = np.random.randint(n, size=L)
+		for g in xrange(L):
+			center = list_temp[g]
+			L_list.append((np.linspace(center - K/2, center + K/2, K+1)).tolist())
+		L_list = [item for sublist in L_list for item in sublist]		
+		L_list = (np.asarray(L_list)).astype(int)		
+		L_freq = freq[(L_list > 0) & (L_list < n)]
+		power = LombScargle(time, signal_temp, noise_sdev).power(L_freq)
+		R_max.append(power.max())
+	return R_max
+
+def FAP(R_max, K, L, n, fap_levels):
+	epsilon, mu, sig = gev.fit(R_max, c = -0.2, loc = 3.e-4, scale = 1)
+	#fap_levels = 1./fap_levels 
+	epsilon = -epsilon
+	return mu - sig/epsilon*(1-(-log(K*L/(fap_levels*n)))**(-epsilon))
+	
 star_amplitude = 1.5e-2
 star_freq = np.pi/0.917569588
 noise_sdev = 1.e-2
@@ -29,8 +57,6 @@ star = star_amplitude*np.sin(2.*np.pi*star_freq*time) + 1.
 noise = noise_sdev*np.random.randn(num_points)
 planet = star_amplitude/2.351*np.sin(2.*np.pi*planet_freq*time) 
 signal = star + noise + planet
-
-
 
 left_boundary = (first_transit - transit_duration) % planet_period
 right_boundary = (first_transit + transit_duration) % planet_period
@@ -57,6 +83,23 @@ frequency, power = LombScargle(time, signal, noise_sdev).autopower()
 frequency1, power1 = LombScargle(time1, signal1, noise_sdev).autopower()
 frequency2, power2 = LombScargle(time2, signal2, noise_sdev).autopower()
 
+
+R, K, L = 300, 10, 40
+fmin, fmax, n = frequency.min(), frequency.max(), len(frequency)
+N = len(time)
+print len(frequency)
+start_time = timer.time()
+R_max = bootstrap(time, signal, fmin, fmax, n, noise_sdev, R, K, L)
+R_max1 = bootstrap(time1, signal1, fmin, fmax, n, noise_sdev, R, K, L)
+R_max2 = bootstrap(time2, signal2, fmin, fmax, n, noise_sdev, R, K, L)
+print 'time: ', timer.time() - start_time, 'seconds'
+print (np.asarray(R_max)).max()
+fap_percentage = FAP(R_max, K, L, n, 0.001)
+fap_percentage1 = FAP(R_max1, K, L, n, 0.001)
+fap_percentage2 = FAP(R_max2, K, L, n, 0.001)
+plt.plot(frequency, LombScargle(time, signal[np.random.randint(N, size=N)], noise_sdev).power(frequency))
+plt.plot([fmin,fmax], [fap_percentage, fap_percentage])
+plt.show()
 
 ####Phase folding for the plots###############
 offset = ((first_transit%planet_period) - planet_period/2.)
@@ -98,6 +141,7 @@ ax2.set_ylabel('Power')
 ax2.set_xlim([0.,13.])
 ax2.set_ylim([6.6e-5,1.])
 ax2.plot(frequency/planet_freq, power, color = 'black')
+ax2.plot([(frequency/planet_freq).min(), (frequency/planet_freq).max()], [fap_percentage, fap_percentage], color = 'black')
 ax2.set_yscale('log')
 
 ax3 = plt.subplot(gs2[1])
@@ -105,6 +149,7 @@ ax3.set_ylabel('Power')
 ax3.set_xlim([0.,13.])
 ax3.set_ylim([6.6e-5,1.])
 ax3.plot(frequency1/planet_freq, power1, color = 'orange')
+ax3.plot([(frequency1/planet_freq).min(), (frequency1/planet_freq).max()], [fap_percentage1, fap_percentage1], color = 'orange')
 ax3.set_yscale('log')
 
 ax4 = plt.subplot(gs2[2])
@@ -115,6 +160,7 @@ ax4.set_xlabel('Frequency (1/orbital period)')
 ax4.set_xticks([1,2,3,4,5,6,7,8,9,10,11,12,13])
 ax4.set_xticklabels([1,2,3,4,5,6,7,8,9,10,11,12,13])
 ax4.plot(frequency2/planet_freq, power2, color = 'blue')
+ax4.plot([(frequency2/planet_freq).min(), (frequency2/planet_freq).max()], [fap_percentage2, fap_percentage2], color = 'blue')
 ax4.set_yscale('log')
 plt.setp(ax2.get_xticklabels(), visible=False)
 plt.setp(ax3.get_xticklabels(), visible=False)
