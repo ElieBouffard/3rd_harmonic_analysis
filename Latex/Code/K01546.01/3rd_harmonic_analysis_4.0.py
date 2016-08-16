@@ -14,8 +14,7 @@ from astropy.stats import LombScargle
 #load the fits files, then write the planet period, the time of its first
 #transit and its duration. If the number of files is not 17, then you will
 #have to change reading loop iteration number as well as the concatenate part.
-#By default, the periodograms uses frequencies from 10.**(-0.05)*orbital_frequency
-#to 10**(0.8)*orbital_frequency with 2000 points evenly spaced in log space.
+#This version fits a simple trapezoid to the phase-folded data.
 
 hdulist = []
 
@@ -122,7 +121,8 @@ PDCSAP_FLUX = PDCSAP_FLUX[~time.mask]
 PDCSAP_FLUX_err = PDCSAP_FLUX_err[~time.mask]
 time = time[~time.mask]	
 print len(time), len(PDCSAP_FLUX), len(PDCSAP_FLUX_err)
-time2 = np.ma.mod(time - time.min() - 1.046,planet_period)
+offset = ((first_transit%planet_period) - planet_period/2.)
+time2 = np.ma.mod(time - offset,planet_period)
 data = np.ma.column_stack((time2,PDCSAP_FLUX,PDCSAP_FLUX_err))                                #2D array of t,signal
 data = data[np.lexsort((data[:,2],data[:,1],data[:,0]))]
 time_dat = data[:,0]
