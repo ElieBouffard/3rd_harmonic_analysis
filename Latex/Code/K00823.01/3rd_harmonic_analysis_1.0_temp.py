@@ -9,12 +9,8 @@ from astroML.time_series import lomb_scargle
 from astropy.stats import sigma_clip
 from astropy.stats import LombScargle
 
-#This code computes the Lomb-Scargle periodogram of an exoplanet. First,
-#load the fits files, then write the planet period, the time of its first
-#transit and its duration. If the number of files is not 17, then you will
-#have to change reading loop iteration number as well as the concatenate part.
-#By default, the periodograms uses frequencies from 10.**(-0.05)*orbital_frequency
-#to 10**(0.8)*orbital_frequency with 2000 points evenly spaced in log space.
+#This code computes the Lomb-Scargle periodogram of K00823.01 using
+#AstroPy.
 
 hdulist = []
 LS_idx = 42
