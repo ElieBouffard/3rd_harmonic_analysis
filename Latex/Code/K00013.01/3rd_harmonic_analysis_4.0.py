@@ -14,8 +14,7 @@ from astropy.stats import LombScargle
 #load the fits files, then write the planet period, the time of its first
 #transit and its duration. If the number of files is not 17, then you will
 #have to change reading loop iteration number as well as the concatenate part.
-#By default, the periodograms uses frequencies from 10.**(-0.05)*orbital_frequency
-#to 10**(0.8)*orbital_frequency with 2000 points evenly spaced in log space.
+#This version fits a simple trapezoid to the phase-folded data, then does the L-s on the residuals.
 
 hdulist = []
 
